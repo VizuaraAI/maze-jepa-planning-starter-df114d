@@ -1,0 +1,51 @@
+# Default configuration. Override any key from the command line, e.g.
+#   python -m mazeplan.train --config configs/default.yaml data.family=large train.steps=20000
+seed: 0
+device: auto            # auto | cuda | mps | cpu
+run_dir: runs/two_rooms_100k_s0
+
+data:
+  family: two_rooms     # two_rooms | medium | large
+  n_transitions: 100000 # data-scaling sweep: 10k, 30k, 100k, 300k, 1M, 3M
+  traj_len: 100
+  n_layouts: 20         # training layouts; eval uses held-out layout seeds below
+  max_step: 0.5         # cells per step
+  img_size: 64
+  path: data/two_rooms_100k_s0.npz
+
+model:
+  latent_dim: 64
+  enc_width: 32
+  pred_hidden: 512
+
+train:
+  steps: 20000
+  batch_size: 128
+  seq_len: 4            # multi-step prediction length
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  sigreg_weight: 0.1    # lambda; ablate {0.01, 0.1, 1.0}
+  num_workers: 4
+  log_every: 200
+
+td:                     # Fix 3: temporal-distance head
+  enabled: true
+  steps: 3000
+  max_offset: 64
+
+plan:
+  horizon: 16           # Fix 2: try 32, 64
+  n_samples: 300
+  n_elites: 30
+  n_iters: 3
+
+eval:
+  cost: l2              # l2 | subgoal | td | oracle
+  layout_seeds: [9001, 9002, 9003, 9004, 9005]   # held out from training (training seeds are 0..n_layouts-1 + 1000*seed)
+  episodes_per_layout: 20
+  max_steps: 200
+  min_bfs_distance: 6
+  success_radius: 0.75
+  diag_pairs: 2000
+  subgoal_radius: 2.0
+  subgoal_reach: 1.0
